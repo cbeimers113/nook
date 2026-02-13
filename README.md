@@ -1,2 +1,8 @@
-# nook
-An experimental systems language project
+# Nook
+
+A programming language project.
+
+**Current Status:** *Experimental Phase*
+
+- [Roadmap](./docs/roadmap.md)
+- [Basic design proposal](./docs/base)
