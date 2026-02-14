@@ -35,10 +35,10 @@ Variable types, constants, and declarations
 * Scope: **global**
 * Memory: **static**
 * Ownership: **borrowed**
-* Assignment: **invalid**
-* Mutable: **no**
-* Initialization: **required**
-* Types: **primitives, collections, pure structs**
+* Assignment: **clones**
+* Mutable: **yes**
+* Initialization: **optional**
+* Types: **all**
 * Declaration: `static name: T = V;`
 
 ---

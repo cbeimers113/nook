@@ -1,16 +1,28 @@
 # Functions
 
-Short introduction sentence.
+Function types, signatures, and calling
 
 ---
 
-## Section 1
+## Signatures
 
 Description
 
 ---
 
-## Section 2
+## Static Functions
+
+Description
+
+---
+
+## Dynamic Functions
+
+Description
+
+---
+
+## Methods
 
 Description
 

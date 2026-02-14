@@ -18,8 +18,8 @@
 - Move vs copy default
   - Assignment of owned variables moves ownership and invalidates previous owner
 - Explicit copy rules
-  - Shallow copy POD and value types with `copy()`
-  - Deep copy structs with inner ownership with `clone()`
+  - Shallow copy value types with assignment
+  - Deep copy pointers and structs with inner ownership with `clone()`
   - Require type to implement a `Clonable` interface for `clone()`
 
 **RAII**
