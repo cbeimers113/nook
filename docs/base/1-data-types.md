@@ -1,18 +1,53 @@
 # Data Types
 
-Short introduction sentence.
+The primitive data types and their properties
 
 ---
 
-## Section 1
+## Types
 
-Description
+**Integral**
+* `u8`  - 8 bit  unsigned integer
+* `u16` - 16 bit unsigned integer
+* `u32` - 32 bit unsigned integer
+* `u64` - 64 bit unsigned integer
+
+* `i8`  - 8 bit  signed integer
+* `i16` - 16 bit signed integer
+* `i32` - 32 bit signed integer
+* `i64` - 64 bit signed integer
+
+**Fractional**
+* `f32` - 32 bit floating point
+* `f64` - 64 bit floating point
+
+**Text**
+* `char` - Unicode scalar value
+* `str`  - string of Unicode characters
+
+**Other**
+* `bool`   - boolean value
+* `own<T>` - owned pointer
+* `ref<T>` - borrowed pointer
 
 ---
 
-## Section 2
+## Default Values
 
-Description
+There are no uninitialized values. Variables without definitions will have the following values by default:
+
+* Integers: `0`
+* Floats: `0.0`
+* `char`: `'\u0'`
+* `str`: `""`
+* `bool`: `false`
+* Pointers: `nil`
+
+---
+
+## Truthiness
+
+All types are truthy when their value is anything other than their default value, and falsy when equal to their default value
 
 ---
 
