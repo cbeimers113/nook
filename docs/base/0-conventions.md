@@ -41,7 +41,9 @@ Project structure, naming, and code style conventions
   * Dynamic function definitions
   * Static function definitions
 * Lines of code should be grouped by whitespace into small regions when possible
-* Function parens should have a space before an opening brace
+* Opening braces - `{` - should have a space:
+  * Preceding when followed by a new line
+  * Following when followed by a token on the same line
 * Unary operators should not have whitespace between operator and operand
 * Binary operators should have whitespace between operator and operands, except:
   * Multiplication, division, exponentiation

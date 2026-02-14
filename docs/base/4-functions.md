@@ -16,4 +16,4 @@ Description
 
 ---
 
-⬅️ [Variables](./3-variables.md) | [Flow Control](./5-flow-control.md) ➡️
+⬅️ [Variables and Constants](./3-variables.md) | [Flow Control](./5-flow-control.md) ➡️

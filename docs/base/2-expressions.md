@@ -51,4 +51,4 @@ Various expression types and operators
 * `#`:  borrow pointer
 
 
-⬅️ [Data Types](./1-data-types.md) | [Variables](./3-variables.md) ➡️
+⬅️ [Data Types](./1-data-types.md) | [Variables and Constants](./3-variables.md) ➡️
