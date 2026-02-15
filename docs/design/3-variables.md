@@ -35,7 +35,7 @@ Variable types, constants, and declarations
 * Scope: **global**
 * Memory: **static**
 * Ownership: **borrowed**
-* Assignment: **clones**
+* Assignment: **invalid**
 * Mutable: **yes**
 * Initialization: **optional**
 * Types: **all**
