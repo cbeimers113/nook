@@ -1,18 +1,48 @@
 # Flow Control
 
-Short introduction sentence.
+Controlling code execution paths
 
 ---
 
-## Section 1
+## Conditional Blocks
 
-Description
+Follow the form:
+```
+if expr {
+	
+} else if expr {
+	
+} else {
+	
+}
+```
 
 ---
 
-## Section 2
+## Switch Blocks
 
-Description
+Follow the form:
+```
+switch expr {
+case tag1:
+    // handle expr == tag1
+case tag2, tag3:
+    // handle expr == tag2 || expr == tag3
+else:
+    // handle all other cases
+}
+```
+
+---
+
+## Loops
+
+Follow the form:
+```
+loop [assign;] expr[; expr] {
+	
+}
+```
 
 ---
 
