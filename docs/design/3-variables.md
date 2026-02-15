@@ -60,7 +60,7 @@ Variable types, constants, and declarations
 
 * Type annotations are required when a variable is declared but not defined (inits as default value)
 * Non-annotated types are inferred from their values
-* There are default inferred primitive types based on value literals:
+* There are default inferred primitive types designd on value literals:
   * Non-decimal numerals: `i32`
   * Decimal numerals: `f64`
   * Enclosed in `"`: `str`
