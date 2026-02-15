@@ -9,7 +9,7 @@ Variable types, constants, and declarations
 * Scope: **local**
 * Memory: **stack**
 * Ownership: **none**
-* Assignment: **copies**
+* Assign as rvalue: **copies**
 * Mutable: **yes**
 * Initialization: **optional**
 * Types: **all**
@@ -22,7 +22,7 @@ Variable types, constants, and declarations
 * Scope: **local**
 * Memory: **heap**
 * Ownership: **owned or borrowed**
-* Assignment: **moves**
+* Assign as rvalue: **moves**
 * Mutable: **yes**
 * Initialization: **optional**
 * Types: **all**
@@ -35,7 +35,7 @@ Variable types, constants, and declarations
 * Scope: **global**
 * Memory: **static**
 * Ownership: **borrowed**
-* Assignment: **invalid**
+* Assign as rvalue: **invalid**
 * Mutable: **yes**
 * Initialization: **optional**
 * Types: **all**
@@ -48,7 +48,7 @@ Variable types, constants, and declarations
 * Scope: **none**
 * Memory: **inlined**
 * Ownership: **none**
-* Assignment: **invalid**
+* Assign as rvalue: **copies**
 * Mutable: **no**
 * Initialization: **required**
 * Types: **primitives**
