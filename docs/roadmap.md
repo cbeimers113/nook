@@ -83,17 +83,17 @@
 ## Implementation Order
 
 ### 0. Base Syntax and Design
-- [ ] Comments, casing and whitespace conventions
-- [ ] Primitive data types
-- [ ] Arithmetic, bitwise, comparison, and logical expressions
-- [ ] Variable declaration and definition
-- [ ] Function definition and calling
-- [ ] Flow control
-- [ ] Heap allocation
-- [ ] Structs
+- [x] Comments, casing and whitespace conventions
+- [x] Primitive data types
+- [x] Arithmetic, bitwise, comparison, and logical expressions
+- [x] Variable declaration and definition
+- [x] Function definition and calling
+- [x] Flow control
+- [x] Heap allocation
+- [x] Structs
 
 ### 1. Core Execution
-- [ ] Lexer
+- [x] Lexer
 - [ ] Parser → AST
 - [ ] Basic C generation
 - [ ] Functions, variables, expressions
