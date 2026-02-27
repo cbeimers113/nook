@@ -1,0 +1,23 @@
+.{
+    .name = .nook,
+    .version = "0.1.0",
+    .description = "An experimental programming language project.",
+    .authors = .{
+      "Chris Beimers <chrisbeimers113@gmail.com>",
+    },
+    .dependencies = .{
+        .args = .{
+            .url = "https://github.com/muhammad-fiaz/args.zig/archive/refs/tags/0.0.3.tar.gz",
+            .hash = "args-0.0.3-8hzgbnU9AwAj9fDwswfT_eY29UQA0-uTjYdbCEWojo3Z",
+        },
+    },
+    .fingerprint = 0x81331c89925c17c3,
+    .minimum_zig_version = "0.15.2",
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        "LICENSE",
+        "README.md",
+    },
+}
