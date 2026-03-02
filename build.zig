@@ -23,41 +23,38 @@ pub fn build(b: *std.Build) void {
     });
 
     // Define internal modules
+    const cli_mod = b.createModule(.{
+        .root_source_file = b.path("src/cli/root.zig"),
+    });
     const core_mod = b.createModule(.{
-        .root_source_file = b.path("src/core/core.zig"),
+        .root_source_file = b.path("src/core/root.zig"),
     });
     const log_mod = b.createModule(.{
-        .root_source_file = b.path("src/log/log.zig"),
+        .root_source_file = b.path("src/log/root.zig"),
     });
     const project_mod = b.createModule(.{
-        .root_source_file = b.path("src/project/project.zig"),
+        .root_source_file = b.path("src/project/root.zig"),
     });
     const util_mod = b.createModule(.{
-        .root_source_file = b.path("src/util/util.zig"),
+        .root_source_file = b.path("src/util/root.zig"),
     });
 
-    // Add args dependency
-    const args_dep = b.dependency("args", .{
-        .target = target,
-        .optimize = optimize,
-    });
-
-    // Configure build metadata
+    // Configure metadata
     const pkg_meta = parseMeta(b);
-    const build_meta = b.addOptions();
-    build_meta.addOption([]const u8, "name", pkg_meta.name);
-    build_meta.addOption([]const u8, "version", pkg_meta.version);
-    build_meta.addOption([]const u8, "description", pkg_meta.description);
+    const meta = b.addOptions();
+    meta.addOption([]const u8, "name", pkg_meta.name);
+    meta.addOption([]const u8, "version", pkg_meta.version);
+    meta.addOption([]const u8, "description", pkg_meta.description);
 
     // Configure internal module imports
+    cli_mod.addImport("core", core_mod);
+    cli_mod.addImport("log", log_mod);
+    cli_mod.addImport("project", project_mod);
+    cli_mod.addImport("util", util_mod);
+    cli_mod.addOptions("meta", meta);
 
-    // Add imports to root
-    exe.root_module.addImport("core", core_mod);
-    exe.root_module.addImport("log", log_mod);
-    exe.root_module.addImport("project", project_mod);
-    exe.root_module.addImport("util", util_mod);
-    exe.root_module.addImport("args", args_dep.module("args"));
-    exe.root_module.addOptions("build_meta", build_meta);
+    log_mod.addImport("util", util_mod);
+    exe.root_module.addImport("cli", cli_mod);
 
     b.installArtifact(exe);
 }
