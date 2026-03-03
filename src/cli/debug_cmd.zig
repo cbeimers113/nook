@@ -1,16 +1,19 @@
+const arg = @import("arg.zig");
 const cmd = @import("cmd.zig");
+const option = @import("option.zig");
+const std = @import("std");
 
 /// Command for debugging the CLI
-pub const debug: cmd.Command = .{
+pub const command: cmd.Command = .{
     .name = "debug",
     .description = "Debug the Nook CLI",
-    .args = &debug_args,
-    .options = &debug_opts,
+    .args = &args,
+    .options = &options,
     .callback = run,
 };
 
 /// Args for the debug command
-const debug_args = [_]cmd.Arg{
+const args = [_]arg.Arg{
     .{
         .name = "foo",
         .description = "A string argument",
@@ -34,7 +37,7 @@ const debug_args = [_]cmd.Arg{
 };
 
 /// Options for the debug command
-const debug_opts = [_]cmd.Option{
+const options = [_]option.Option{
     .{
         .long = "string",
         .short = 's',
@@ -59,8 +62,13 @@ const debug_opts = [_]cmd.Option{
         .description = "A float option",
         .data_type = .float,
     },
-    cmd.help_option,
+    option.help_option,
 };
+
+/// Register the debug comand
+pub fn register(allocator: std.mem.Allocator) !void {
+    try cmd.commands.append(allocator, command);
+}
 
 /// Callback for the debug command
 fn run() ?[]const u8 {

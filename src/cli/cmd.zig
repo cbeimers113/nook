@@ -1,87 +1,17 @@
+const arg = @import("arg.zig");
 const log = @import("log");
+const option = @import("option.zig");
 const std = @import("std");
 
-/// Global options
-pub const help_option: Option = .{
-    .long = "help",
-    .short = 'h',
-    .description = "Display help for this command",
-    .data_type = .flag,
-};
-
-/// Represents the data type of an argument
-pub const DataType = enum {
-    string,
-    int,
-    float,
-    flag,
-};
-
-/// Represents a required positional argument for a command
-pub const Arg = struct {
-    name: []const u8,
-    description: []const u8,
-    data_type: DataType,
-    value: []const u8 = "",
-
-    fn help(self: Arg, spaces: usize) void {
-        std.debug.print("\t{s}{s}{s}: ", .{
-            log.YELLOW,
-            self.name,
-            log.RESET,
-        });
-
-        for (0..spaces - self.name.len) |_| {
-            std.debug.print(" ", .{});
-        }
-
-        std.debug.print("{s}{s}{s}\n", .{
-            log.DIM,
-            self.description,
-            log.RESET,
-        });
-    }
-};
-
-/// Represents a key-value argument for a command
-pub const Option = struct {
-    long: []const u8,
-    short: u8 = '\u{0}',
-    description: []const u8,
-    data_type: DataType,
-    value: []const u8 = "",
-
-    fn help(self: Option, spaces: usize) void {
-        std.debug.print("\t{s}--{s} ", .{
-            log.MAGENTA,
-            self.long,
-        });
-        for (0..spaces - self.long.len) |_| {
-            std.debug.print(" ", .{});
-        }
-
-        if (self.short == '\u{0}') {
-            std.debug.print("  ", .{});
-        } else {
-            std.debug.print("-{c}", .{self.short});
-        }
-
-        std.debug.print("{s}: {s}{s}{s} ({s})\n", .{
-            log.RESET,
-            log.DIM,
-            self.description,
-            log.RESET,
-            @tagName(self.data_type),
-        });
-    }
-};
+// The command registry
+pub var commands: std.ArrayList(Command) = .empty;
 
 /// Represents a command supported by the CLI
 pub const Command = struct {
     name: []const u8,
     description: []const u8,
-    args: ?[]const Arg = null,
-    options: ?[]const Option = null,
+    args: ?[]const arg.Arg = null,
+    options: ?[]const option.Option = null,
     callback: *const fn () ?[]const u8,
 
     /// Print the command's help string
@@ -108,17 +38,17 @@ pub const Command = struct {
         std.debug.print("\n\n", .{});
 
         // Null-coalesce args and options into empty slices
-        const args = self.args orelse &[_]Arg{};
-        const options = self.options orelse &[_]Option{};
+        const args = self.args orelse &[_]arg.Arg{};
+        const options = self.options orelse &[_]option.Option{};
 
         // Measure spaces to align arg and option descriptions
         var arg_spaces: usize = "help".len;
         var opt_spaces: usize = 0;
-        for (args) |arg| {
-            if (arg.name.len > arg_spaces) arg_spaces = arg.name.len;
+        for (args) |a| {
+            if (a.name.len > arg_spaces) arg_spaces = a.name.len;
         }
-        for (options) |opt| {
-            if (opt.long.len > opt_spaces) opt_spaces = opt.long.len;
+        for (options) |o| {
+            if (o.long.len > opt_spaces) opt_spaces = o.long.len;
         }
 
         // List args
@@ -126,15 +56,9 @@ pub const Command = struct {
             log.BOLD,
             log.RESET,
         });
-        for (args) |arg| {
-            arg.help(arg_spaces);
+        for (args) |a| {
+            a.help(arg_spaces);
         }
-        const help_arg: Arg = .{
-            .name = "help",
-            .description = "Display the command's help message",
-            .data_type = .string,
-        };
-        help_arg.help(arg_spaces);
 
         // List options
         if (options.len == 0) return;
@@ -142,8 +66,8 @@ pub const Command = struct {
             log.BOLD,
             log.RESET,
         });
-        for (options) |option| {
-            option.help(opt_spaces);
+        for (options) |o| {
+            o.help(opt_spaces);
         }
     }
 };

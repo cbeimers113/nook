@@ -1,15 +1,17 @@
 const cmd = @import("cmd.zig");
+const option = @import("option.zig");
+const std = @import("std");
 
 /// Command to build a Nook project
-pub const build: cmd.Command = .{
+pub const command: cmd.Command = .{
     .name = "build",
     .description = "Build a Nook project",
-    .options = &build_opts,
+    .options = &options,
     .callback = run,
 };
 
 /// Options for the build command
-const build_opts = [_]cmd.Option{
+const options = [_]option.Option{
     .{
         .long = "out",
         .short = 'o',
@@ -22,8 +24,13 @@ const build_opts = [_]cmd.Option{
         .description = "Enable verbose logging",
         .data_type = .flag,
     },
-    cmd.help_option,
+    option.help_option,
 };
+
+/// Register the build comand
+pub fn register(allocator: std.mem.Allocator) !void {
+    try cmd.commands.append(allocator, command);
+}
 
 /// Callback for the build command
 fn run() ?[]const u8 {
