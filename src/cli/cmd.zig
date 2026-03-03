@@ -1,6 +1,14 @@
 const log = @import("log");
 const std = @import("std");
 
+/// Global options
+pub const help_option: Option = .{
+    .long = "help",
+    .short = 'h',
+    .description = "Display help for this command",
+    .data_type = .flag,
+};
+
 /// Represents the data type of an argument
 pub const DataType = enum {
     string,

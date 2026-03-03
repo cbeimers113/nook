@@ -11,17 +11,23 @@ const init_cmd = @import("init_cmd.zig");
 const commands = [_]cmd.Command{
     build_cmd.build,
     debug_cmd.debug,
-    .{
-        .name = "help",
-        .description = "Display the Nook CLI help message",
-        .callback = help,
-    },
+    help_cmd,
     init_cmd.init,
-    .{
-        .name = "version",
-        .description = "Display the Nook version",
-        .callback = version,
-    },
+    version_cmd,
+};
+
+/// The help command
+const help_cmd: cmd.Command = .{
+    .name = "help",
+    .description = "Display the Nook CLI help message",
+    .callback = help,
+};
+
+/// The version command
+const version_cmd: cmd.Command = .{
+    .name = "version",
+    .description = "Display the Nook version",
+    .callback = version,
 };
 
 /// Parse and handle command line arguments
@@ -58,12 +64,6 @@ pub fn handle(allocator: std.mem.Allocator) !u8 {
 
     if (args.len > 2) {
         for (args[2..args.len], 0..) |arg, i| {
-            // All commands get the "help" arg
-            if (i == 0 and std.mem.eql(u8, arg, "help")) {
-                command.help();
-                return 0;
-            }
-
             // If this command takes more args, collect it
             if (i == cmd_args.len) break;
             try pos_args.append(allocator, .{
@@ -125,6 +125,20 @@ pub fn handle(allocator: std.mem.Allocator) !u8 {
         }
     }
 
+    std.debug.print("Got args: ", .{});
+    for (pos_args.items, 0..) |arg, i| {
+        std.debug.print("{s}", .{arg.name});
+        if (i < pos_args.items.len - 1) std.debug.print(", ", .{});
+    }
+    std.debug.print("\n", .{});
+
+    std.debug.print("Got options: ", .{});
+    for (opt_args.items, 0..) |arg, i| {
+        std.debug.print("{s}", .{arg.long});
+        if (i < opt_args.items.len - 1) std.debug.print(", ", .{});
+    }
+    std.debug.print("\n", .{});
+
     // Execute command
     if (command.callback()) |msg| {
         log.err("{s}", .{msg});
@@ -140,7 +154,7 @@ pub fn help() ?[]const u8 {
     std.debug.print("{s}\n\n", .{meta.description});
 
     // Usage
-    std.debug.print("{s}USAGE:{s}\n\t{s}{s} {s}[COMMAND] {s}[help|ARGS] {s}[--OPTIONS]{s}\n\n", .{
+    std.debug.print("{s}USAGE:{s}\n\t{s}{s} {s}[COMMAND] {s}[ARGS] {s}[--OPTIONS]{s}\n\n", .{
         log.BOLD,
         log.RESET,
         log.GREEN,

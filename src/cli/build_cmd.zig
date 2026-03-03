@@ -22,6 +22,7 @@ const build_opts = [_]cmd.Option{
         .description = "Enable verbose logging",
         .data_type = .flag,
     },
+    cmd.help_option,
 };
 
 /// Callback for the build command

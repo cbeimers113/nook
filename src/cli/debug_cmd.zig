@@ -59,6 +59,7 @@ const debug_opts = [_]cmd.Option{
         .description = "A float option",
         .data_type = .float,
     },
+    cmd.help_option,
 };
 
 /// Callback for the debug command
