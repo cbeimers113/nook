@@ -92,7 +92,6 @@ pub const Arg = struct {
     name: []const u8,
     description: []const u8,
     data_type: DataType,
-    value: []const u8 = "",
 
     /// Print the Arg's help string
     fn help(self: Arg, spaces: usize) void {
@@ -120,7 +119,6 @@ pub const Option = struct {
     short: u8 = '\u{0}',
     description: []const u8,
     data_type: DataType,
-    value: []const u8 = "",
 
     /// Print the Option's help string
     fn help(self: Option, spaces: usize) void {
@@ -146,14 +144,6 @@ pub const Option = struct {
             @tagName(self.data_type),
         });
     }
-
-    /// Check Option equality
-    pub fn eq(self: Option, other: Option) bool {
-        return self.short == other.short and
-            self.data_type == other.data_type and
-            std.mem.eql(u8, self.long, other.long) and
-            std.mem.eql(u8, self.description, other.description);
-    }
 };
 
 /// Represents the data type of a command argument
@@ -162,4 +152,12 @@ pub const DataType = enum {
     int,
     float,
     flag,
+};
+
+/// Represents the literal value of a command argument
+pub const Value = union {
+    string: []const u8,
+    int: i64,
+    float: f64,
+    flag: bool,
 };

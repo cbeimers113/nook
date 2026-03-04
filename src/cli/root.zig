@@ -8,6 +8,9 @@ const cmd_help = @import("cmd_help.zig");
 const cmd_init = @import("cmd_init.zig");
 const cmd_version = @import("cmd_version.zig");
 
+/// CLI parsing errors
+const ParseError = error{ InvalidValue, MalformedOption };
+
 /// Parse and handle command line arguments
 pub fn handle(allocator: std.mem.Allocator) !u8 {
     // Register commands
@@ -43,9 +46,9 @@ pub fn handle(allocator: std.mem.Allocator) !u8 {
     };
 
     // Collect positional and optional arguments
-    var pos_args: std.ArrayList(cmd.Arg) = .empty;
+    var pos_args: std.ArrayList(cmd.Value) = .empty;
     defer pos_args.deinit(allocator);
-    var opt_args: std.ArrayList(cmd.Option) = .empty;
+    var opt_args: std.StringHashMapUnmanaged(cmd.Value) = .empty;
     defer opt_args.deinit(allocator);
 
     // Null-coalesce this command's supported arguments
@@ -65,12 +68,8 @@ pub fn handle(allocator: std.mem.Allocator) !u8 {
             }
 
             const cmd_arg = cmd_args[count];
-            try pos_args.append(allocator, .{
-                .name = cmd_arg.name,
-                .description = cmd_arg.description,
-                .data_type = cmd_arg.data_type,
-                .value = arg,
-            });
+            const value = try parseArg(arg, cmd_arg.data_type);
+            try pos_args.append(allocator, value);
             continue;
         }
 
@@ -97,13 +96,8 @@ pub fn handle(allocator: std.mem.Allocator) !u8 {
         }
 
         if (maybe_option) |option| {
-            try opt_args.append(allocator, .{
-                .long = option.long,
-                .short = option.short,
-                .description = option.description,
-                .data_type = option.data_type,
-                .value = std.mem.trimStart(u8, std.mem.trimStart(u8, arg, "-"), "-"),
-            });
+            const value = try parseOption(arg, option.data_type);
+            try opt_args.put(allocator, option.long, value);
             continue;
         }
 
@@ -112,8 +106,9 @@ pub fn handle(allocator: std.mem.Allocator) !u8 {
     }
 
     // Help option takes precedence
-    for (opt_args.items) |option| {
-        if (!option.eq(cmd.help_option)) continue;
+    var it = opt_args.iterator();
+    while (it.next()) |option| {
+        if (!std.mem.eql(u8, option.key_ptr.*, cmd.help_option.long)) continue;
         command.help();
         return 0;
     }
@@ -127,10 +122,83 @@ pub fn handle(allocator: std.mem.Allocator) !u8 {
     }
 
     // Execute command
+    // TODO: pass in args and options
     if (command.callback()) |msg| {
         log.err("{s}", .{msg});
         return 1;
     }
 
     return 0;
+}
+
+/// Parse a positional arg string into its value
+fn parseArg(arg: []const u8, data_type: cmd.DataType) !cmd.Value {
+    switch (data_type) {
+        .string => return cmd.Value{ .string = arg },
+        .int => return cmd.Value{ .int = try parseInt(arg) },
+        .float => return cmd.Value{ .float = try parseFloat(arg) },
+        .flag => {
+            const is_true = std.mem.eql(u8, arg, "true");
+            const is_false = std.mem.eql(u8, arg, "false");
+
+            if (!is_true and !is_false) {
+                log.err("Invalid flag value: '{s}'; expected 'true' or 'false'", .{arg});
+                return ParseError.InvalidValue;
+            }
+
+            return cmd.Value{ .flag = is_true };
+        },
+    }
+}
+
+/// Parse an optional arg string into its value
+fn parseOption(option: []const u8, data_type: cmd.DataType) ParseError!cmd.Value {
+    // Flag options are truthy
+    if (data_type == .flag) return cmd.Value{ .flag = true };
+
+    // Other types require key=val syntax
+    var pivot: usize = 0;
+    for (option, 0..) |char, i| {
+        if (char == '=') {
+            pivot = i;
+            break;
+        }
+    }
+    if (pivot == 0 or pivot == option.len - 1) {
+        log.err("Malformed option '{s}'; expected form --name=value", .{option});
+        return ParseError.MalformedOption;
+    }
+
+    // Value is everything beyond the pivot
+    const value = option[pivot + 1 ..];
+
+    // Parse ints and floats
+    if (data_type == .int) {
+        return cmd.Value{ .int = try parseInt(value) };
+    } else if (data_type == .float) {
+        return cmd.Value{ .float = try parseFloat(value) };
+    }
+
+    // Remaining data type is string
+    return cmd.Value{ .string = value };
+}
+
+/// Parse an integer string
+fn parseInt(string: []const u8) ParseError!i64 {
+    const int_val = std.fmt.parseInt(i64, string, 10) catch {
+        log.err("Invalid integer value: '{s}'", .{string});
+        return ParseError.InvalidValue;
+    };
+
+    return int_val;
+}
+
+/// Parse a float string
+fn parseFloat(string: []const u8) ParseError!f64 {
+    const float_val = std.fmt.parseFloat(f64, string) catch {
+        log.err("Invalid float value: '{s}'", .{string});
+        return ParseError.InvalidValue;
+    };
+
+    return float_val;
 }
