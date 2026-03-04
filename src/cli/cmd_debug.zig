@@ -1,6 +1,4 @@
-const arg = @import("arg.zig");
 const cmd = @import("cmd.zig");
-const option = @import("option.zig");
 const std = @import("std");
 
 /// Command for debugging the CLI
@@ -13,7 +11,7 @@ pub const command: cmd.Command = .{
 };
 
 /// Args for the debug command
-const args = [_]arg.Arg{
+const args = [_]cmd.Arg{
     .{
         .name = "foo",
         .description = "A string argument",
@@ -37,7 +35,7 @@ const args = [_]arg.Arg{
 };
 
 /// Options for the debug command
-const options = [_]option.Option{
+const options = [_]cmd.Option{
     .{
         .long = "string",
         .short = 's',
@@ -62,7 +60,7 @@ const options = [_]option.Option{
         .description = "A float option",
         .data_type = .float,
     },
-    option.help_option,
+    cmd.help_option,
 };
 
 /// Register the debug comand

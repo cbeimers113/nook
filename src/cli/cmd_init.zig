@@ -1,5 +1,4 @@
 const cmd = @import("cmd.zig");
-const option = @import("option.zig");
 const std = @import("std");
 
 /// Command to create a new Nook project
@@ -11,7 +10,7 @@ pub const command: cmd.Command = .{
 };
 
 /// Options for the init command
-const options = [_]option.Option{option.help_option};
+const options = [_]cmd.Option{cmd.help_option};
 
 /// Register the init comand
 pub fn register(allocator: std.mem.Allocator) !void {

@@ -1,73 +1,165 @@
-const arg = @import("arg.zig");
 const log = @import("log");
-const option = @import("option.zig");
+const meta = @import("meta");
 const std = @import("std");
 
 // The command registry
 pub var commands: std.ArrayList(Command) = .empty;
 
+/// Global options
+pub const help_option: Option = .{
+    .long = "help",
+    .short = 'h',
+    .description = "Display help for this command",
+    .data_type = .flag,
+};
+
 /// Represents a command supported by the CLI
 pub const Command = struct {
     name: []const u8,
     description: []const u8,
-    args: ?[]const arg.Arg = null,
-    options: ?[]const option.Option = null,
+    args: ?[]const Arg = null,
+    options: ?[]const Option = null,
     callback: *const fn () ?[]const u8,
 
-    /// Print the command's help string
+    /// Print the Command's help string
     pub fn help(self: Command) void {
-        std.debug.print("{s}\n\n{s}USAGE{s}:\n\t{s}{s}{s}", .{
+        std.debug.print("{s}\n\n{s}USAGE{s}:\n\t{s}{s} {s}{s}{s}", .{
             self.description,
             log.BOLD,
             log.RESET,
+            log.GREEN,
+            meta.name,
             log.BLUE,
             self.name,
             log.RESET,
         });
-        std.debug.print(" {s}[help|ARGS]{s}", .{
-            log.YELLOW,
-            log.RESET,
-        });
-        // TODO: print args in order
-        if (self.options) |_| {
+
+        // Null-coalesce args and options
+        const args = self.args orelse &[_]Arg{};
+        const options = self.options orelse &[_]Option{};
+
+        // List positional arguments in usage string if this command has them
+        for (args) |arg| {
+            std.debug.print(" {s}<{s}>{s}", .{
+                log.YELLOW,
+                arg.name,
+                log.RESET,
+            });
+        }
+
+        // Add options to usage string if this command has them
+        if (options.len > 0)
             std.debug.print(" {s}[--OPTIONS]{s}", .{
                 log.MAGENTA,
                 log.RESET,
             });
-        }
-        std.debug.print("\n\n", .{});
-
-        // Null-coalesce args and options into empty slices
-        const args = self.args orelse &[_]arg.Arg{};
-        const options = self.options orelse &[_]option.Option{};
+        std.debug.print("\n", .{});
 
         // Measure spaces to align arg and option descriptions
-        var arg_spaces: usize = "help".len;
+        var arg_spaces: usize = 0;
         var opt_spaces: usize = 0;
-        for (args) |a| {
-            if (a.name.len > arg_spaces) arg_spaces = a.name.len;
+        for (args) |arg| {
+            if (arg.name.len > arg_spaces) arg_spaces = arg.name.len;
         }
-        for (options) |o| {
-            if (o.long.len > opt_spaces) opt_spaces = o.long.len;
+        for (options) |option| {
+            if (option.long.len > opt_spaces) opt_spaces = option.long.len;
         }
 
         // List args
-        std.debug.print("{s}ARGS{s}:\n", .{
-            log.BOLD,
-            log.RESET,
-        });
-        for (args) |a| {
-            a.help(arg_spaces);
+        if (args.len > 0)
+            std.debug.print("\n{s}ARGS{s}:\n", .{
+                log.BOLD,
+                log.RESET,
+            });
+        for (args) |arg| {
+            arg.help(arg_spaces);
         }
 
         // List options
-        if (options.len == 0) return;
-        std.debug.print("\n{s}OPTIONS{s}:\n", .{
-            log.BOLD,
-            log.RESET,
-        });
-        for (options) |o| {
-            o.help(opt_spaces);
+        if (options.len > 0)
+            std.debug.print("\n{s}OPTIONS{s}:\n", .{
+                log.BOLD,
+                log.RESET,
+            });
+        for (options) |option| {
+            option.help(opt_spaces);
         }
     }
+};
+
+/// Represents a required positional argument for a command
+pub const Arg = struct {
+    name: []const u8,
+    description: []const u8,
+    data_type: DataType,
+    value: []const u8 = "",
+
+    /// Print the Arg's help string
+    fn help(self: Arg, spaces: usize) void {
+        std.debug.print("\t{s}{s}{s}: ", .{
+            log.YELLOW,
+            self.name,
+            log.RESET,
+        });
+
+        for (0..spaces - self.name.len) |_| {
+            std.debug.print(" ", .{});
+        }
+
+        std.debug.print("{s}{s}{s}\n", .{
+            log.DIM,
+            self.description,
+            log.RESET,
+        });
+    }
+};
+
+/// Represents a key-value argument for a command
+pub const Option = struct {
+    long: []const u8,
+    short: u8 = '\u{0}',
+    description: []const u8,
+    data_type: DataType,
+    value: []const u8 = "",
+
+    /// Print the Option's help string
+    fn help(self: Option, spaces: usize) void {
+        std.debug.print("\t{s}--{s} ", .{
+            log.MAGENTA,
+            self.long,
+        });
+        for (0..spaces - self.long.len) |_| {
+            std.debug.print(" ", .{});
+        }
+
+        if (self.short == '\u{0}') {
+            std.debug.print("  ", .{});
+        } else {
+            std.debug.print("-{c}", .{self.short});
+        }
+
+        std.debug.print("{s}: {s}{s}{s} ({s})\n", .{
+            log.RESET,
+            log.DIM,
+            self.description,
+            log.RESET,
+            @tagName(self.data_type),
+        });
+    }
+
+    /// Check Option equality
+    pub fn eq(self: Option, other: Option) bool {
+        return self.short == other.short and
+            self.data_type == other.data_type and
+            std.mem.eql(u8, self.long, other.long) and
+            std.mem.eql(u8, self.description, other.description);
+    }
+};
+
+/// Represents the data type of a command argument
+pub const DataType = enum {
+    string,
+    int,
+    float,
+    flag,
 };

@@ -1,5 +1,4 @@
 const cmd = @import("cmd.zig");
-const option = @import("option.zig");
 const std = @import("std");
 
 /// Command to build a Nook project
@@ -11,11 +10,11 @@ pub const command: cmd.Command = .{
 };
 
 /// Options for the build command
-const options = [_]option.Option{
+const options = [_]cmd.Option{
     .{
         .long = "out",
         .short = 'o',
-        .description = "Output file name, default = module name",
+        .description = "Output file name, default is module name",
         .data_type = .string,
     },
     .{
@@ -24,7 +23,7 @@ const options = [_]option.Option{
         .description = "Enable verbose logging",
         .data_type = .flag,
     },
-    option.help_option,
+    cmd.help_option,
 };
 
 /// Register the build comand

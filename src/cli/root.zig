@@ -1,25 +1,22 @@
-const arg = @import("arg.zig");
 const cmd = @import("cmd.zig");
 const log = @import("log");
-const meta = @import("meta");
-const option = @import("option.zig");
 const std = @import("std");
 
-const build_cmd = @import("build_cmd.zig");
-const debug_cmd = @import("debug_cmd.zig");
-const help_cmd = @import("help_cmd.zig");
-const init_cmd = @import("init_cmd.zig");
-const version_cmd = @import("version_cmd.zig");
+const cmd_build = @import("cmd_build.zig");
+const cmd_debug = @import("cmd_debug.zig");
+const cmd_help = @import("cmd_help.zig");
+const cmd_init = @import("cmd_init.zig");
+const cmd_version = @import("cmd_version.zig");
 
 /// Parse and handle command line arguments
 pub fn handle(allocator: std.mem.Allocator) !u8 {
     // Register commands
     defer cmd.commands.deinit(allocator);
-    try build_cmd.register(allocator);
-    try debug_cmd.register(allocator);
-    try help_cmd.register(allocator);
-    try init_cmd.register(allocator);
-    try version_cmd.register(allocator);
+    try cmd_build.register(allocator);
+    try cmd_debug.register(allocator);
+    try cmd_help.register(allocator);
+    try cmd_init.register(allocator);
+    try cmd_version.register(allocator);
 
     // Get command line args
     const args = try std.process.argsAlloc(allocator);
@@ -33,9 +30,9 @@ pub fn handle(allocator: std.mem.Allocator) !u8 {
 
     // Check if the command exists
     var maybe_command: ?cmd.Command = null;
-    for (cmd.commands.items) |c| {
-        if (!std.mem.eql(u8, c.name, cmd_name)) continue;
-        maybe_command = c;
+    for (cmd.commands.items) |command| {
+        if (!std.mem.eql(u8, command.name, cmd_name)) continue;
+        maybe_command = command;
         break;
     }
 
@@ -45,88 +42,89 @@ pub fn handle(allocator: std.mem.Allocator) !u8 {
         return 1;
     };
 
-    // Parse positional args
-    var pos_args: std.ArrayList(arg.Arg) = .empty;
+    // Collect positional and optional arguments
+    var pos_args: std.ArrayList(cmd.Arg) = .empty;
     defer pos_args.deinit(allocator);
-    var arg_idx: usize = 2;
-    const cmd_args = command.args orelse &[_]arg.Arg{};
+    var opt_args: std.ArrayList(cmd.Option) = .empty;
+    defer opt_args.deinit(allocator);
 
-    if (args.len > 2) {
-        for (args[2..args.len], 0..) |a, i| {
-            // If this command takes more args, collect it
-            if (i == cmd_args.len) break;
+    // Null-coalesce this command's supported arguments
+    const cmd_args = command.args orelse &[_]cmd.Arg{};
+    const cmd_options = command.options orelse &[_]cmd.Option{};
+
+    // Parse each user-provided argument
+    for (args, 0..) |arg, i| {
+        if (i < 2) continue;
+
+        // Positional arg; check if we require more
+        if (arg[0] != '-') {
+            const count = pos_args.items.len;
+            if (count == cmd_args.len) {
+                log.err("Extra argument provided: '{s}'", .{arg});
+                return 1;
+            }
+
+            const cmd_arg = cmd_args[count];
             try pos_args.append(allocator, .{
-                .name = cmd_args[i].name,
-                .description = cmd_args[i].description,
-                .data_type = cmd_args[i].data_type,
-                .value = a,
+                .name = cmd_arg.name,
+                .description = cmd_arg.description,
+                .data_type = cmd_arg.data_type,
+                .value = arg,
             });
-
-            arg_idx += 1;
+            continue;
         }
-    }
 
-    // Missing positional arguments
-    if (pos_args.items.len < cmd_args.len) {
-        for (cmd_args[pos_args.items.len..]) |a| {
-            log.err("Missing required argument: '{s}'", .{a.name});
+        // Optional arg; check if we recognize it
+        var maybe_option: ?cmd.Option = null;
+        for (cmd_options) |option| {
+
+            // Check for matching short identifier
+            if (option.short != '\u{0}' and
+                arg.len == 2 and
+                arg[0] == '-' and
+                arg[1] == option.short)
+            {
+                maybe_option = option;
+                break;
+            }
+
+            // Check for matching long identifier
+            if (!std.mem.startsWith(u8, arg, "--")) continue;
+            if (std.mem.eql(u8, option.long, std.mem.trimStart(u8, arg, "--"))) {
+                maybe_option = option;
+                break;
+            }
         }
+
+        if (maybe_option) |option| {
+            try opt_args.append(allocator, .{
+                .long = option.long,
+                .short = option.short,
+                .description = option.description,
+                .data_type = option.data_type,
+                .value = std.mem.trimStart(u8, std.mem.trimStart(u8, arg, "-"), "-"),
+            });
+            continue;
+        }
+
+        log.err("Unknown option: '{s}'", .{arg});
         return 1;
     }
 
-    // Parse options
-    var opt_args: std.ArrayList(option.Option) = .empty;
-    defer opt_args.deinit(allocator);
-    const cmd_opts = command.options orelse &[_]option.Option{};
+    // Help option takes precedence
+    for (opt_args.items) |option| {
+        if (!option.eq(cmd.help_option)) continue;
+        command.help();
+        return 0;
+    }
 
-    while (arg_idx < args.len) : (arg_idx += 1) {
-        // Find matching option
-        const a = args[arg_idx];
-        var o: ?option.Option = null;
-        for (cmd_opts) |opt| {
-            if (opt.short != '\u{0}' and
-                a.len == 2 and
-                a[0] == '-' and
-                a[1] == opt.short)
-            {
-                o = opt;
-                break;
-            }
-
-            if (!std.mem.startsWith(u8, a, "--")) continue;
-            if (std.mem.eql(u8, opt.long, std.mem.trimStart(u8, a, "--"))) {
-                o = opt;
-                break;
-            }
+    // Check for missing positional arguments
+    if (pos_args.items.len < cmd_args.len) {
+        for (cmd_args[pos_args.items.len..]) |arg| {
+            log.err("Missing required argument: '{s}'", .{arg.name});
         }
-
-        if (o) |opt| {
-            try opt_args.append(allocator, .{
-                .long = opt.long,
-                .short = opt.short,
-                .description = opt.description,
-                .data_type = opt.data_type,
-                .value = std.mem.trimStart(u8, std.mem.trimStart(u8, a, "-"), "-"),
-            });
-        } else {
-            log.err("Unknown option: '{s}'", .{a});
-            return 1;
-        }
+        return 1;
     }
-
-    std.debug.print("Got args: ", .{});
-    for (pos_args.items, 0..) |a, i| {
-        std.debug.print("{s}", .{a.name});
-        if (i < pos_args.items.len - 1) std.debug.print(", ", .{});
-    }
-    std.debug.print("\n", .{});
-
-    std.debug.print("Got options: ", .{});
-    for (opt_args.items, 0..) |o, i| {
-        std.debug.print("{s}", .{o.long});
-        if (i < opt_args.items.len - 1) std.debug.print(", ", .{});
-    }
-    std.debug.print("\n", .{});
 
     // Execute command
     if (command.callback()) |msg| {
