@@ -141,9 +141,9 @@ pub const Parser = struct {
             initializer = try self.expression();
         }
 
-        // Check whether we're defining a struct
-        const is_struct = if (initializer) |in| in.* == .function else false;
-        if (!is_struct) _ = try self.consume(.op_semicolon, "Expected ';' after symbol declaration");
+        // Check whether we're defining a struct or function
+        const needs_semicolon = if (initializer) |in| in.* == .function or in.* == .construct else false;
+        if (!needs_semicolon) _ = try self.consume(.op_semicolon, "Expected ';' after symbol declaration");
 
         const stmt = try self.allocator.create(types.Stmt);
         stmt.* = .{ .symbol = .{

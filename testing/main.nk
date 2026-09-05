@@ -1,5 +1,13 @@
 pkg main;
 
+// A constant
+const PI: f32 = 3.14159;
+
+// A function with params
+const fn = (a: f32, b: u8) -> i64 {
+    return 0;
+}
+
 // The main function
 const main = () -> void {
     var i: i64 = 12;

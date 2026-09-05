@@ -39,7 +39,7 @@ pub fn build(allocator: std.mem.Allocator, build_options: BuildOptions) !void {
 
     // Hand off the AST to codegen
     log.debug("Generating C from AST...", .{});
-    try codegen.generate(allocator, ast.items, std.mem.trimEnd(u8, build_options.path, ".nk"));
+    try codegen.generate(allocator, ast.items, build_options.path);
 }
 
 /// Print out the token stream

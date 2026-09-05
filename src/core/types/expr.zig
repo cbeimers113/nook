@@ -160,8 +160,11 @@ pub const Expr = union(enum) {
             }
 
             /// Generate C code from the function parameter
-            pub fn generate(_: Param, _: std.mem.Allocator) []const u8 {
-                return "// unimplemented: function parameter\n";
+            pub fn generate(self: Param, allocator: std.mem.Allocator) []const u8 {
+                return std.fmt.allocPrint(allocator, "{s} {s}", .{
+                    self.type_annotation.generate(allocator),
+                    self.name.value,
+                }) catch "/* OOM; function param */";
             }
         };
 
@@ -183,9 +186,23 @@ pub const Expr = union(enum) {
             }) catch "[func]";
         }
 
+        /// Generate C code from the function expression's parameters
+        pub fn generateParams(self: Function, allocator: std.mem.Allocator) []const u8 {
+            var params: []const u8 = "";
+            for (self.params, 0..) |param, i| {
+                params = std.fmt.allocPrint(allocator, "{s}{s}{s}", .{
+                    params,
+                    param.generate(allocator),
+                    if (i < self.params.len - 1) ", " else "",
+                }) catch params;
+            }
+
+            return params;
+        }
+
         /// Generate C code from the function expression
         pub fn generate(_: Function, _: std.mem.Allocator) []const u8 {
-            return "// unimplemented: function expression\n";
+            return "/* unimplemented: function expression */";
         }
     };
 

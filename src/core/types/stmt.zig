@@ -60,8 +60,23 @@ pub const Stmt = union(enum) {
         }
 
         /// Generate C code from the block statement
-        pub fn generate(_: Block, _: std.mem.Allocator) []const u8 {
-            return "// unimplemented: block statement\n";
+        pub fn generate(self: Block, allocator: std.mem.Allocator) []const u8 {
+            var statements: []const u8 = "";
+            for (self.statements, 0..) |statement, i| {
+                // Indent nested statements
+                const rendered = statement.generate(allocator);
+                const indented = std.mem.replaceOwned(u8, allocator, rendered, "\n", "\n\t") catch rendered;
+
+                statements = std.fmt.allocPrint(allocator, "{s}\t{s}{s}", .{
+                    statements,
+                    indented,
+                    if (i < self.statements.len - 1) "\n" else "",
+                }) catch statements;
+            }
+
+            return std.fmt.allocPrint(allocator, "{{\n{s}\n}}", .{
+                statements,
+            }) catch "/* OOM; block statement */";
         }
     };
 
@@ -128,8 +143,12 @@ pub const Stmt = union(enum) {
         }
 
         /// Generate C code from the package statement
-        pub fn generate(_: Package, _: std.mem.Allocator) []const u8 {
-            return "// unimplemented: package statement\n";
+        pub fn generate(self: Package, allocator: std.mem.Allocator) []const u8 {
+            return std.fmt.allocPrint(
+                allocator,
+                "/* unimplemented: package {s} */\n",
+                .{self.string(allocator)},
+            ) catch "/* unimplemented: package statement */\n";
         }
     };
 
@@ -178,8 +197,64 @@ pub const Stmt = union(enum) {
         }
 
         /// Generate C code from the symbol statement
-        pub fn generate(_: Symbol, _: std.mem.Allocator) []const u8 {
-            return "// unimplemented: symbol statement\n";
+        pub fn generate(self: Symbol, allocator: std.mem.Allocator) []const u8 {
+            std.debug.print("generating: {s}\n", .{self.string(allocator)});
+
+            return switch (self.kind.token_type) {
+                // Constant declaration
+                .decl_const => self.generateConstant(allocator),
+
+                // Fallthrough; unimplemented
+                else => std.fmt.allocPrint(
+                    allocator,
+                    "/* unimplemented: symbol<{s}={s}> */\n",
+                    .{
+                        @tagName(self.kind.token_type),
+                        self.kind.value,
+                    },
+                ) catch "/* unimplemented: symbol statement */\n",
+            };
+        }
+
+        /// Generate C code from a constant declaration
+        fn generateConstant(self: Symbol, allocator: std.mem.Allocator) []const u8 {
+            if (self.initializer) |initializer| return switch (initializer.*) {
+                // Literal initializer
+                .literal => |literal| std.fmt.allocPrint(
+                    allocator,
+                    "#define {s} {s}\n",
+                    .{
+                        self.identifier.value,
+                        literal.value.raw(allocator),
+                    },
+                ) catch "/* OOM; literal */",
+
+                // Function initializer
+                .function => |function| std.fmt.allocPrint(
+                    allocator,
+                    "{s} {s}({s})\n{s}\n\n",
+                    .{
+                        function.returns.generate(allocator),
+                        self.identifier.value,
+                        function.generateParams(allocator),
+                        function.body.generate(allocator),
+                    },
+                ) catch "/* OOM; function */",
+
+                // Unsupported initializer
+                else => std.fmt.allocPrint(
+                    allocator,
+                    "/* unsupported constant initializer: '{s}' */",
+                    .{@tagName(initializer.*)},
+                ) catch "/* OOM; unsupported constant initializer */",
+            };
+
+            // Missing initializer
+            return std.fmt.allocPrint(
+                allocator,
+                "/* constant '{s}' lacks initializer */",
+                .{self.identifier.value},
+            ) catch "/* OOM; constant lacks initializer */";
         }
     };
 
@@ -230,6 +305,10 @@ pub const TypeAnnotation = union(enum) {
                 self.returns.string(allocator),
             }) catch "func";
         }
+
+        fn generate(_: Function, _: std.mem.Allocator) []const u8 {
+            return "/* unimplemented: function type annotation */";
+        }
     };
 
     const Named = struct {
@@ -237,6 +316,31 @@ pub const TypeAnnotation = union(enum) {
 
         fn string(self: Named, _: std.mem.Allocator) []const u8 {
             return self.type_id.value;
+        }
+
+        fn generate(self: Named, allocator: std.mem.Allocator) []const u8 {
+            return switch (self.type_id.token_type) {
+                .dt_void => "void",
+                .dt_bool => "bool",
+                .dt_str => "const char*",
+                .dt_char => "char",
+                .dt_f32 => "float",
+                .dt_f64 => "double",
+                .dt_i8 => "int8_t",
+                .dt_i16 => "int16_t",
+                .dt_i32 => "int32_t",
+                .dt_i64 => "int64_t",
+                .dt_u8 => "uint8_t",
+                .dt_u16 => "uint16_t",
+                .dt_u32 => "uint32_t",
+                .dt_u64 => "uint64_t",
+
+                else => std.fmt.allocPrint(
+                    allocator,
+                    "/* unimplemented named type annotation: {s} */",
+                    .{@tagName(self.type_id.token_type)},
+                ) catch "/* OOM; unimplemented named type annotation */",
+            };
         }
     };
 
@@ -250,11 +354,21 @@ pub const TypeAnnotation = union(enum) {
                 self.inner.string(allocator),
             }) catch "T";
         }
+
+        fn generate(_: Pointer, _: std.mem.Allocator) []const u8 {
+            return "/* unimplemented: pointer type annotation */";
+        }
     };
 
     pub fn string(self: TypeAnnotation, allocator: std.mem.Allocator) []const u8 {
         return switch (self) {
             inline else => |inner| inner.string(allocator),
+        };
+    }
+
+    pub fn generate(self: TypeAnnotation, allocator: std.mem.Allocator) []const u8 {
+        return switch (self) {
+            inline else => |inner| inner.generate(allocator),
         };
     }
 };
